@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
 
 colors = np.array(
     [
@@ -25,56 +26,30 @@ colors = np.array(
 
 def single_plot(ax, df, target_column, unique_clusters, type):
     if type != "PARA":
-        if df.shape[1] > 3:
-            Xt = pd.concat(
-                [
-                    pd.DataFrame(
-                        TSNE(n_components=2, random_state=42).fit_transform(
-                            df.iloc[:, :-1].to_numpy(),
-                            df.iloc[:, -1].to_numpy(),
-                        )
-                        if type == "TSNE"
-                        else PCA(n_components=2, random_state=42).fit_transform(
-                            df.iloc[:, :-1].to_numpy(),
-                            df.iloc[:, -1].to_numpy(),
-                        ),
-                        columns=[f"{type}_0", f"{type}_1"],
-                    ),
-                    df[target_column],
-                ],
-                axis=1,
+        func = TSNE if type == "TSNE" else PCA
+        if df.shape[1] > 2:
+            Xt = pd.DataFrame(
+                func(n_components=2, random_state=42).fit_transform(
+                    df.iloc[:, :-1].to_numpy()
+                ),
+                columns=[f"{type}_0", f"{type}_1"],
             )
+            sil = silhouette_score(Xt, df[target_column])
+            mod = -1 + sil
         else:
-            Xt = df
+            Xt = df.iloc[:, :-1]
 
-        for i, cluster_label in enumerate(unique_clusters):
-            cluster_data = Xt[Xt[target_column] == cluster_label]
-            plt.scatter(
-                cluster_data.iloc[:, 0],
-                cluster_data.iloc[:, 1],
-                c=[colors[i]] * cluster_data.shape[0],
-                label=f"Cluster {cluster_label}",
-            )
+            plt.scatter(Xt, c=[colors[int(i)] for i in df[target_column].to_numpy()])
 
-            n_selected_features = Xt.shape[1]
-            Xt = Xt.iloc[:, :n_selected_features]
             min, max = Xt.min().min(), Xt.max().max()
             range = (max - min) / 10
-            xs = Xt.iloc[:, 0]
-            ys = (
-                [(max + min) / 2] * Xt.shape[0]
-                if n_selected_features < 2
-                else Xt.iloc[:, 1]
-            )
             ax.set_xlim([min - range, max + range])
             ax.set_ylim([min - range, max + range])
             ax.set_xlabel(list(Xt.columns)[0], fontsize=16)
-            ax.set_ylabel(
-                "None" if n_selected_features < 2 else list(Xt.columns)[1], fontsize=16
-            )
+            ax.set_ylabel(list(Xt.columns)[1], fontsize=16)
     else:
         ax = pd.plotting.parallel_coordinates(df, "target", color=colors)
-    ax.set_title(type)
+    ax.set_title(f"{type}\nplain: {sil} mod: {mod}")
 
 
 def plot_cluster_data(df, target_column):

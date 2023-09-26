@@ -78,39 +78,31 @@ def generate_clusters(config, pbar):
         random_state=42,
     )
 
-    # X, y = make_classification(
-    #     n_samples=config["n_instances"],
-    #     n_features=config["n_features"]
-    #     + int(config["n_features"] * config["noisy_features"])
-    #     + int(config["n_features"] * config["correlated_features"]),
-    #     n_informative=config["n_features"],
-    #     n_redundant=int(config["n_features"] * config["correlated_features"]),
-    #     n_repeated=int(config["n_features"] * config["noisy_features"]),
-    #     # centers=config["support_centroids"],
-    #     n_classes=config["n_clusters"],
-    #     n_clusters_per_class=1,
-    #     shuffle=True,
-    #     random_state=42,
-    # )
+    to_df = lambda first, second: pd.DataFrame(
+        np.concatenate([first, np.array([second]).T.astype(int)], axis=1),
+        columns=[str(idx) for idx in range(first.shape[1])] + ["target"],
+    )
+
+    to_return = {"original": to_df(X, y)}
 
     if config["support_noisy_features"] > 0:
-        X = np.concatenate(
-            [
-                X,
-                # StandardScaler().fit_transform(
-                (
-                    np.random.rand(X.shape[0], config["support_noisy_features"])
-                    * (X.max().max() - X.min().min())
-                )
-                + X.min().min()
-                # ),
-            ],
-            axis=1,
+        to_return["noisy"] = to_df(
+            np.concatenate(
+                [
+                    X,
+                    # StandardScaler().fit_transform(
+                    (
+                        np.random.rand(X.shape[0], config["support_noisy_features"])
+                        * (X.max().max() - X.min().min())
+                    )
+                    + X.min().min()
+                    # ),
+                ],
+                axis=1,
+            ),
+            y,
         )
 
     pbar.update()
 
-    return pd.DataFrame(
-        np.concatenate([X, np.array([y]).T.astype(int)], axis=1),
-        columns=[str(idx) for idx in range(X.shape[1])] + ["target"],
-    )
+    return to_return

@@ -61,26 +61,30 @@ if __name__ == "__main__":
             ]
 
         print("\tDone.")
-        print("--- PLOT CLUTERSINGS ---")
+        print("--- EXPORT CLUTERSINGS ---")
 
         with tqdm(total=len(clusterings)) as pbar:
-            for idx, clustering in enumerate(clusterings):
-                clustering.to_csv(
-                    os.path.join(
-                        make_dir(os.path.join(output_path, "raw")), f"syn{idx}.csv"
-                    ),
-                    index=False,
-                    header=None,
-                )
-                fig = plot_cluster_data(clustering, "target")
-                fig.savefig(
-                    os.path.join(
-                        make_dir(os.path.join(output_path, "img")), f"syn{idx}.png"
-                    ),
-                    dpi=300,
-                    bbox_inches="tight",
-                )
-                pbar.update()
-                plt.close(fig)
+            for id_clustering, clustering_dict in enumerate(clusterings):
+                for label, clustering in clustering_dict.items():
+                    clustering_name = f"syn{id_clustering}_{label}"
+                    clustering.to_csv(
+                        os.path.join(
+                            make_dir(os.path.join(output_path, "raw")),
+                            f"{clustering_name}.csv",
+                        ),
+                        index=False,
+                        header=None,
+                    )
+                    fig = plot_cluster_data(clustering, "target")
+                    fig.savefig(
+                        os.path.join(
+                            make_dir(os.path.join(output_path, "img")),
+                            f"{clustering_name}.png",
+                        ),
+                        dpi=300,
+                        bbox_inches="tight",
+                    )
+                    pbar.update()
+                    plt.close(fig)
 
         print("\tDone.")
