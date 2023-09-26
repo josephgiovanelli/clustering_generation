@@ -26,29 +26,30 @@ colors = np.array(
 
 def single_plot(ax, df, target_column, unique_clusters, type):
     if type != "PARA":
-        func = TSNE if type == "TSNE" else PCA
         if df.shape[1] > 2:
+            func = TSNE if type == "TSNE" else PCA
             Xt = pd.DataFrame(
                 func(n_components=2, random_state=42).fit_transform(
                     df.iloc[:, :-1].to_numpy()
                 ),
                 columns=[f"{type}_0", f"{type}_1"],
             )
-            sil = silhouette_score(Xt, df[target_column])
-            mod = -1 + sil
-        else:
-            Xt = df.iloc[:, :-1]
-
-            plt.scatter(Xt, c=[colors[int(i)] for i in df[target_column].to_numpy()])
-
-            min, max = Xt.min().min(), Xt.max().max()
-            range = (max - min) / 10
-            ax.set_xlim([min - range, max + range])
-            ax.set_ylim([min - range, max + range])
-            ax.set_xlabel(list(Xt.columns)[0], fontsize=16)
-            ax.set_ylabel(list(Xt.columns)[1], fontsize=16)
     else:
-        ax = pd.plotting.parallel_coordinates(df, "target", color=colors)
+        Xt = df.iloc[:, :-1]
+
+    sil = silhouette_score(Xt, df[target_column])
+    mod = -1 + sil
+
+    if type != "PARA":
+        ax.scatter(Xt, c=[colors[int(i)] for i in df[target_column].to_numpy()])
+        min, max = Xt.min().min(), Xt.max().max()
+        range = (max - min) / 10
+        ax.set_xlim([min - range, max + range])
+        ax.set_ylim([min - range, max + range])
+        ax.set_xlabel(list(Xt.columns)[0], fontsize=16)
+        ax.set_ylabel(list(Xt.columns)[1], fontsize=16)
+    else:
+        ax = pd.plotting.parallel_coordinates(df, target_column, color=colors)
     ax.set_title(f"{type}\nplain: {sil} mod: {mod}")
 
 
