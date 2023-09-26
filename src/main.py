@@ -67,14 +67,15 @@ if __name__ == "__main__":
             for idx, clustering in enumerate(clusterings):
                 clustering.to_csv(
                     os.path.join(
-                        make_dir(os.path.join(output_path, "raw")), f"{idx}.csv"
+                        make_dir(os.path.join(output_path, "raw")), f"syn{idx}.csv"
                     ),
                     index=False,
+                    header=None,
                 )
                 fig = plot_cluster_data(clustering, "target")
                 fig.savefig(
                     os.path.join(
-                        make_dir(os.path.join(output_path, "img")), f"{idx}.png"
+                        make_dir(os.path.join(output_path, "img")), f"syn{idx}.png"
                     ),
                     dpi=300,
                     bbox_inches="tight",
