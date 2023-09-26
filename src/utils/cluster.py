@@ -94,8 +94,6 @@ def generate_clusters(config, pbar):
     # )
 
     if config["support_noisy_features"] > 0:
-        print(X.max().max())
-        print(X.min().min())
         X = np.concatenate(
             [
                 X,
@@ -113,6 +111,6 @@ def generate_clusters(config, pbar):
     pbar.update()
 
     return pd.DataFrame(
-        np.concatenate([X, np.array([y]).T], axis=1),
+        np.concatenate([X, np.array([y]).T.astype(int)], axis=1),
         columns=[str(idx) for idx in range(X.shape[1])] + ["target"],
     )
