@@ -37,11 +37,15 @@ def single_plot(ax, df, target_column, unique_clusters, type):
     else:
         Xt = df.iloc[:, :-1]
 
-    sil = silhouette_score(Xt, df[target_column])
+    sil = round(silhouette_score(Xt, df[target_column]), 2)
     mod = -1 + sil
 
     if type != "PARA":
-        ax.scatter(Xt, c=[colors[int(i)] for i in df[target_column].to_numpy()])
+        ax.scatter(
+            Xt.iloc[:, 0],
+            Xt.iloc[:, 1],
+            c=[colors[int(i)] for i in df[target_column].to_numpy()],
+        )
         min, max = Xt.min().min(), Xt.max().max()
         range = (max - min) / 10
         ax.set_xlim([min - range, max + range])
