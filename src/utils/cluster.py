@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import pandas as pd
 
@@ -23,6 +24,9 @@ def create_configs(cs):
         config["support_cluster_std"] = [config["cluster_std"]] * config["n_clusters"]
         config["support_noisy_features"] = int(
             config["noisy_features"] * config["n_features"]
+        )
+        config["support_correlated_features"] = int(
+            config["correlated_features"] * config["n_features"]
         )
 
     return configs
@@ -83,26 +87,40 @@ def generate_clusters(config, pbar):
         columns=[str(idx) for idx in range(first.shape[1])] + ["target"],
     )
 
-    to_return = {"original": to_df(X, y)}
+    dict_X = {"original": X.copy(), "final": X.copy()}
+    dict_to_return = {"original": to_df(X, y)}
 
     if config["support_noisy_features"] > 0:
-        to_return["noisy"] = to_df(
-            np.concatenate(
-                [
-                    X,
-                    # StandardScaler().fit_transform(
-                    (
-                        np.random.rand(X.shape[0], config["support_noisy_features"])
-                        * (X.max().max() - X.min().min())
-                    )
-                    + X.min().min()
-                    # ),
-                ],
-                axis=1,
-            ),
-            y,
+        dict_X["noisy"] = (
+            np.random.rand(
+                dict_X["original"].shape[0], config["support_noisy_features"]
+            )
+            * (dict_X["original"].max().max() - dict_X["original"].min().min())
+        ) + dict_X["original"].min().min()
+
+        dict_X["final"] = np.concatenate([dict_X["final"], dict_X["noisy"]], axis=1)
+        dict_to_return["noisy"] = to_df(dict_X["final"], y)
+
+    if config["support_correlated_features"] > 0:
+        std = 0.02
+        dict_X["correlated"] = np.array(
+            [
+                dict_X["original"][:, feature]
+                + np.random.normal(0, std, dict_X["original"].shape[0])
+                for feature in random.sample(
+                    range(0, dict_X["original"].shape[1] - 1),
+                    config["support_correlated_features"],
+                )
+            ]
+        ).T
+
+        dict_X["final"] = np.concatenate(
+            [dict_X["final"], dict_X["correlated"]], axis=1
         )
+        dict_to_return["correlated"] = to_df(dict_X["final"], y)
+
+    dict_to_return["final"] = to_df(dict_X["final"], y)
 
     pbar.update()
 
-    return to_return
+    return dict_to_return

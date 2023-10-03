@@ -38,7 +38,7 @@ def single_plot(ax, df, target_column, unique_clusters, type):
         Xt = df.iloc[:, :-1]
 
     sil = round(silhouette_score(Xt, df[target_column]), 2)
-    mod = -1 + sil
+    mod = round(-1 + sil, 2)
 
     if type != "PARA":
         ax.scatter(
@@ -54,7 +54,9 @@ def single_plot(ax, df, target_column, unique_clusters, type):
         ax.set_ylabel(list(Xt.columns)[1], fontsize=16)
     else:
         ax = pd.plotting.parallel_coordinates(df, target_column, color=colors)
-    ax.set_title(f"{type}\nplain: {sil} mod: {mod}")
+    ax.set_title(
+        f"{type}\nplain:" + "{:.2f}".format(sil) + " mod: " + "{:.2f}".format(mod)
+    )
 
 
 def plot_cluster_data(df, target_column):

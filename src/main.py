@@ -50,7 +50,10 @@ if __name__ == "__main__":
 
         with open(os.path.join(output_path, "configs.json"), "w") as file:
             json.dump(configs, file)
-        json_to_csv(list(configs.values()), os.path.join(output_path, "configs.csv"))
+        pd.read_json(os.path.join(output_path, "configs.json")).transpose().to_csv(
+            os.path.join(output_path, "configs.csv")
+        )
+        # json_to_csv(list(configs.values()), )
 
         print("\tDone.")
         print("--- GENERATE CLUTERSINGS ---")
@@ -66,10 +69,12 @@ if __name__ == "__main__":
         with tqdm(total=len(clusterings)) as pbar:
             for id_clustering, clustering_dict in enumerate(clusterings):
                 for label, clustering in clustering_dict.items():
-                    clustering_name = f"syn{id_clustering}_{label}"
+                    suffix = "" if label == "final" else f"_{label}"
+                    output_folder = "final" if label == "final" else "raw"
+                    clustering_name = f"syn{id_clustering}{suffix}"
                     clustering.to_csv(
                         os.path.join(
-                            make_dir(os.path.join(output_path, "raw")),
+                            make_dir(os.path.join(output_path, output_folder)),
                             f"{clustering_name}.csv",
                         ),
                         index=False,
@@ -84,7 +89,7 @@ if __name__ == "__main__":
                         dpi=300,
                         bbox_inches="tight",
                     )
-                    pbar.update()
                     plt.close(fig)
+                pbar.update()
 
         print("\tDone.")
