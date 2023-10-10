@@ -5,20 +5,23 @@ import pandas as pd
 
 from sklearn.datasets import make_blobs, make_classification
 from sklearn.discriminant_analysis import StandardScaler
+from sklearn.manifold import TSNE
+from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import MinMaxScaler
 
 from ConfigSpace import Configuration
 from smac import BlackBoxFacade, Scenario
 
 
-def create_configs(cs):
-    configs = {
-        idx: config.get_dictionary()
-        # for idx, config in enumerate(cs.sample_configuration(20))
-        for idx, config in enumerate(BlackBoxFacade.get_initial_design(Scenario(cs), n_configs=20).select_configurations())
-    }
+def create_configs(cs, n_configs):
+    configs = [
+        config.get_dictionary()
+        for config in BlackBoxFacade.get_initial_design(
+            Scenario(cs),
+            n_configs=n_configs).select_configurations()
+    ]
 
-    for _, config in configs.items():
+    for config in configs:
 
         config["cluster_std"] = round(config["cluster_std"], 2)
         try:
@@ -110,7 +113,7 @@ def get_cluster_instances(config: Configuration):
     ]
 
 
-def generate_clusters(config, pbar):
+def generate_clusters(config):
     X, y = make_blobs(
         n_samples=config["support_instances"],
         n_features=config["n_features"],
@@ -157,8 +160,6 @@ def generate_clusters(config, pbar):
         )
         dict_to_return["correlated"] = to_df(dict_X["final"], y)
 
-    
-
     if config["support_distorted_features"] > 0:
         dict_X["distorted"] = dict_X["final"]
         for feature in random.sample(range(0, dict_X["final"].shape[1] - 1), config["support_distorted_features"]):
@@ -170,6 +171,15 @@ def generate_clusters(config, pbar):
 
     dict_to_return["final"] = to_df(dict_X["final"], y)
 
-    pbar.update()
+    final_X = dict_to_return["final"].copy().iloc[:, :-1].to_numpy()
+    if dict_to_return["final"].shape[1] > 3:
+        Xt = TSNE(n_components=2, random_state=42).fit_transform(final_X)
+    else:
+        Xt = final_X
 
-    return dict_to_return
+    config["sil"] = round(silhouette_score(Xt, y), 2).astype(np.float64)
+
+    if config["sil"] > 0.01 and config["sil"] < 0.99:
+        return dict_to_return
+    else:
+        raise Exception("Conf not valid")

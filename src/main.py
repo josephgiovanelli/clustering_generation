@@ -55,31 +55,37 @@ if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
 
-        print("--- GENERATE CONFIGURATIONS ---")
+        tot_configs = 20
+        current_round = 0
+        final_configs = []
 
-        configs = create_configs(cs)
+        print("--- GENERATE CONFIGURATIONS ---")
+        with tqdm(total=tot_configs) as pbar:
+            while len(final_configs) < tot_configs:
+
+                current_configs = create_configs(cs=cs, n_configs=tot_configs-len(final_configs))
+
+                clusterings = []
+                current_round += 1
+                for config in current_configs:
+                    try:
+                        config["round"] = current_round
+                        clusterings.append(generate_clusters(config))
+                        final_configs.append(config)
+                        pbar.update()
+                    except:
+                        pass
 
         with open(os.path.join(output_path, "configs.json"), "w") as file:
-            json.dump(configs, file)
-        to_export = ["n_instances","n_clusters","n_clusters_ratio","cluster_std","support_total_features","n_features","support_noisy_features","support_correlated_features","support_distorted_features","noisy_features","correlated_features","distorted_features"]
+            json.dump({idx: config for idx, config in enumerate(final_configs)}, file)
 
+        to_export = ["n_instances","n_clusters","n_clusters_ratio","cluster_std","support_total_features","n_features","support_noisy_features","support_correlated_features","support_distorted_features","noisy_features","correlated_features","distorted_features", "round"]
         pd.read_json(os.path.join(output_path, "configs.json")).transpose()[to_export].to_csv(
             os.path.join(output_path, "configs.csv")
         )
-        # json_to_csv(list(configs.values()), )
 
-        print("\tDone.")
-        print("--- GENERATE CLUTERSINGS ---")
-
-        with tqdm(total=len(configs)) as pbar:
-            clusterings = [
-                generate_clusters(config, pbar) for config in configs.values()
-            ]
-
-        print("\tDone.")
-        print("--- EXPORT CLUTERSINGS ---")
-
-        with tqdm(total=len(clusterings)) as pbar:
+        print("--- GENERATE CLUSTERINGS ---")
+        with tqdm(total=tot_configs) as pbar:
             for id_clustering, clustering_dict in enumerate(clusterings):
                 for label, clustering in clustering_dict.items():
                     suffix = "" if label == "final" else f"_{label}"
@@ -104,5 +110,3 @@ if __name__ == "__main__":
                     )
                     plt.close(fig)
                 pbar.update()
-
-        print("\tDone.")
