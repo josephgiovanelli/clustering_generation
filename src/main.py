@@ -58,6 +58,7 @@ if __name__ == "__main__":
         tot_configs = 20
         current_round = 0
         final_configs = []
+        final_clusterings = []
 
         print("--- GENERATE CONFIGURATIONS ---")
         with tqdm(total=tot_configs) as pbar:
@@ -65,12 +66,11 @@ if __name__ == "__main__":
 
                 current_configs = create_configs(cs=cs, n_configs=tot_configs-len(final_configs))
 
-                clusterings = []
                 current_round += 1
                 for config in current_configs:
                     try:
                         config["round"] = current_round
-                        clusterings.append(generate_clusters(config))
+                        final_clusterings.append(generate_clusters(config))
                         final_configs.append(config)
                         pbar.update()
                     except:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
         print("--- GENERATE CLUSTERINGS ---")
         with tqdm(total=tot_configs) as pbar:
-            for id_clustering, clustering_dict in enumerate(clusterings):
+            for id_clustering, clustering_dict in enumerate(final_clusterings):
                 for label, clustering in clustering_dict.items():
                     suffix = "" if label == "final" else f"_{label}"
                     output_folder = "final" if label == "final" else "raw"
