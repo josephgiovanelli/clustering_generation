@@ -1,3 +1,4 @@
+import math
 import random
 import numpy as np
 import pandas as pd
@@ -7,27 +8,64 @@ from sklearn.discriminant_analysis import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 
 from ConfigSpace import Configuration
+from smac import BlackBoxFacade, Scenario
 
 
 def create_configs(cs):
     configs = {
         idx: config.get_dictionary()
-        for idx, config in enumerate(cs.sample_configuration(20))
+        # for idx, config in enumerate(cs.sample_configuration(20))
+        for idx, config in enumerate(BlackBoxFacade.get_initial_design(Scenario(cs), n_configs=20).select_configurations())
     }
 
     for _, config in configs.items():
+
+        config["cluster_std"] = round(config["cluster_std"], 2)
+        try:
+            config["noisy_features"] = round(config["noisy_features"], 2)
+            config["support_noisy_features"] = max(
+                1,
+                int(config["noisy_features"] * config["n_features"])
+            )
+        except:
+            config["noisy_features"] = 0.
+            config["support_noisy_features"] = 0
+
+        try:
+            config["correlated_features"] = round(config["correlated_features"], 2)
+            config["support_correlated_features"] = max(
+                1,
+                int(config["correlated_features"] * config["n_features"])
+            )
+        except:
+            config["correlated_features"] = 0.
+            config["support_correlated_features"] = 0
+
+        config["support_total_features"] = config["n_features"] + config["support_noisy_features"] + config["support_correlated_features"]
+
+        try:
+            config["distorted_features"] = round(config["distorted_features"], 2)
+            config["support_distorted_features"] = max(
+                1,
+                int(config["distorted_features"] * config["support_total_features"])
+            )
+        except:
+            config["distorted_features"] = 0.
+            config["support_distorted_features"] = 0
+
+        config["n_clusters_ratio"] = round(config["n_clusters_ratio"], 2)
+        config["n_clusters"] = max(2, int(config["n_clusters_ratio"] * math.sqrt(config["n_instances"])))
+
         centroids = get_cluster_centroids(config)
+
         config["support_centroids"] = (
             centroids if type(centroids) == list else centroids.tolist()
         )
         config["support_instances"] = list(get_cluster_instances(config))
         config["support_cluster_std"] = [config["cluster_std"]] * config["n_clusters"]
-        config["support_noisy_features"] = int(
-            config["noisy_features"] * config["n_features"]
-        )
-        config["support_correlated_features"] = int(
-            config["correlated_features"] * config["n_features"]
-        )
+
+        config["support_total_features"] += config["support_distorted_features"]
+
 
     return configs
 
@@ -118,6 +156,17 @@ def generate_clusters(config, pbar):
             [dict_X["final"], dict_X["correlated"]], axis=1
         )
         dict_to_return["correlated"] = to_df(dict_X["final"], y)
+
+    
+
+    if config["support_distorted_features"] > 0:
+        dict_X["distorted"] = dict_X["final"]
+        for feature in random.sample(range(0, dict_X["final"].shape[1] - 1), config["support_distorted_features"]):
+            dict_X["distorted"][:, feature] *= random.randint(2, 10)
+
+        dict_X["final"] = dict_X["distorted"]
+        dict_to_return["distorted"] = to_df(dict_X["final"], y)
+
 
     dict_to_return["final"] = to_df(dict_X["final"], y)
 

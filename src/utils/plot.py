@@ -6,8 +6,7 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 
-colors = np.array(
-    [
+colors = [
         "blue",
         "orange",
         "green",
@@ -20,8 +19,7 @@ colors = np.array(
         "cyan",
         "indigo",
         "black",
-    ]
-)
+    ] * 2
 
 
 def single_plot(ax, df, target_column, unique_clusters, type):

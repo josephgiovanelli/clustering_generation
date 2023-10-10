@@ -11,7 +11,7 @@ from sklearn.datasets import make_blobs
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 
-from ConfigSpace import Configuration, ConfigurationSpace
+from ConfigSpace import Configuration, ConfigurationSpace, Float, Integer, EqualsCondition, InCondition
 
 from tqdm import tqdm
 
@@ -28,18 +28,29 @@ if __name__ == "__main__":
 
     cs = ConfigurationSpace(
         {
-            "n_features": (2, 6),
-            # "n_instances": [100, 500, 1000, 5000],
-            "n_instances": [100, 200, 500, 1000, 2000],
-            "n_clusters": (2, 6),
+            "n_features": Integer("n_features", (2, 10), log=True),
+            # "n_instances": [100, 200, 500, 1000, 2000, 5000],
+            "n_instances": Integer("n_instances", (100, 5000), log=True),
+            # "n_clusters": (2, 6),
+            "n_clusters_ratio": Float("n_clusters_ratio", (0.05, 1.0), log=True),
             # "cluster_std": (1.0, 1.5),
             "cluster_std": (0.1, 0.3),
-            "noisy_features": (0.0, 0.5),
-            "correlated_features": (0.0, 1.0),
-            "distorted_features": (0.0, 1.0),
+
+            "noisy_features": Float("noisy_features", (0.2, 0.5), log=False),
+
+            "correlated_features": Float("correlated_features", (0.2, 0.5), log=False),
+
+            "distorted_features": Float("distorted_features", (0.2, 0.5), log=False),
+
+            "kind": ["100", "010", "001", "110", "101", "011", "111"],
         },
         seed=seed,
     )
+
+    cs.add_condition(InCondition(cs['noisy_features'], cs['kind'], ["100", "110", "101", "111"]))
+    cs.add_condition(InCondition(cs['correlated_features'], cs['kind'], ["010", "110", "011", "111"]))
+    cs.add_condition(InCondition(cs['distorted_features'], cs['kind'], ["001", "101", "011", "111"]))
+
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
@@ -50,7 +61,9 @@ if __name__ == "__main__":
 
         with open(os.path.join(output_path, "configs.json"), "w") as file:
             json.dump(configs, file)
-        pd.read_json(os.path.join(output_path, "configs.json")).transpose().to_csv(
+        to_export = ["n_instances","n_clusters","n_clusters_ratio","cluster_std","support_total_features","n_features","support_noisy_features","support_correlated_features","support_distorted_features","noisy_features","correlated_features","distorted_features"]
+
+        pd.read_json(os.path.join(output_path, "configs.json")).transpose()[to_export].to_csv(
             os.path.join(output_path, "configs.csv")
         )
         # json_to_csv(list(configs.values()), )
