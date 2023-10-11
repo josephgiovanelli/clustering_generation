@@ -129,7 +129,8 @@ def generate_clusters(config):
     )
 
     dict_X = {"original": X.copy(), "final": X.copy()}
-    dict_to_return = {"original": to_df(X, y)}
+    step = 0
+    dict_to_return = {f"{step}original": to_df(X, y)}
 
     if config["support_noisy_features"] > 0:
         dict_X["noisy"] = (
@@ -140,7 +141,8 @@ def generate_clusters(config):
         ) + dict_X["original"].min().min()
 
         dict_X["final"] = np.concatenate([dict_X["final"], dict_X["noisy"]], axis=1)
-        dict_to_return["noisy"] = to_df(dict_X["final"], y)
+        step += 1
+        dict_to_return[f"{step}noisy"] = to_df(dict_X["final"], y)
 
     if config["support_correlated_features"] > 0:
         std = 0.02
@@ -158,7 +160,8 @@ def generate_clusters(config):
         dict_X["final"] = np.concatenate(
             [dict_X["final"], dict_X["correlated"]], axis=1
         )
-        dict_to_return["correlated"] = to_df(dict_X["final"], y)
+        step += 1
+        dict_to_return[f"{step}correlated"] = to_df(dict_X["final"], y)
 
     if config["support_distorted_features"] > 0:
         dict_X["distorted"] = dict_X["final"]
@@ -166,13 +169,15 @@ def generate_clusters(config):
             dict_X["distorted"][:, feature] *= random.randint(2, 10)
 
         dict_X["final"] = dict_X["distorted"]
-        dict_to_return["distorted"] = to_df(dict_X["final"], y)
+        step += 1
+        dict_to_return[f"{step}distorted"] = to_df(dict_X["final"], y)
 
 
-    dict_to_return["final"] = to_df(dict_X["final"], y)
+    step += 1
+    dict_to_return[f"{step}final"] = to_df(dict_X["final"], y)
 
-    final_X = dict_to_return["final"].copy().iloc[:, :-1].to_numpy()
-    if dict_to_return["final"].shape[1] > 3:
+    final_X = dict_to_return[f"{step}final"].copy().iloc[:, :-1].to_numpy()
+    if final_X.shape[1] > 2:
         Xt = TSNE(n_components=2, random_state=42).fit_transform(final_X)
     else:
         Xt = final_X

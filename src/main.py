@@ -88,17 +88,8 @@ if __name__ == "__main__":
         with tqdm(total=tot_configs) as pbar:
             for id_clustering, clustering_dict in enumerate(final_clusterings):
                 for label, clustering in clustering_dict.items():
-                    suffix = "" if label == "final" else f"_{label}"
-                    output_folder = "final" if label == "final" else "raw"
-                    clustering_name = f"syn{id_clustering}{suffix}"
-                    clustering.to_csv(
-                        os.path.join(
-                            make_dir(os.path.join(output_path, output_folder)),
-                            f"{clustering_name}.csv",
-                        ),
-                        index=False,
-                        header=None,
-                    )
+
+                    clustering_name = f"syn{id_clustering}_{label}"
                     fig = plot_cluster_data(clustering, "target")
                     fig.savefig(
                         os.path.join(
@@ -109,4 +100,16 @@ if __name__ == "__main__":
                         bbox_inches="tight",
                     )
                     plt.close(fig)
+
+                    suffix = "" if "final" in label else f"_{label}"
+                    output_folder = "final" if "final" in label else "raw"
+                    clustering_name = f"syn{id_clustering}{suffix}"
+                    clustering.to_csv(
+                        os.path.join(
+                            make_dir(os.path.join(output_path, output_folder)),
+                            f"{clustering_name}.csv",
+                        ),
+                        index=False,
+                        header=None,
+                    )
                 pbar.update()
