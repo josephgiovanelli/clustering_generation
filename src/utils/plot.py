@@ -23,8 +23,7 @@ colors = [
 
 
 def single_plot(ax, df, target_column, unique_clusters, type):
-    if type != "PARA":
-        if df.shape[1] > 2:
+    if type != "PARA" and df.shape[1] > 3:
             func = TSNE if type == "TSNE" else PCA
             Xt = pd.DataFrame(
                 func(n_components=2, random_state=42).fit_transform(

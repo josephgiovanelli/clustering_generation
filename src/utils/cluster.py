@@ -176,15 +176,20 @@ def generate_clusters(config):
     step += 1
     dict_to_return[f"{step}final"] = to_df(dict_X["final"], y)
 
+    initial_X = dict_to_return["0original"].copy().iloc[:, :-1].to_numpy()
     final_X = dict_to_return[f"{step}final"].copy().iloc[:, :-1].to_numpy()
-    if final_X.shape[1] > 2:
-        Xt = TSNE(n_components=2, random_state=42).fit_transform(final_X)
-    else:
-        Xt = final_X
+    initial_Xt = TSNE(n_components=2, random_state=42).fit_transform(initial_X) if initial_X.shape[1] > 2 else initial_X
+    final_Xt = TSNE(n_components=2, random_state=42).fit_transform(final_X) if final_X.shape[1] > 2 else final_X
 
-    config["sil"] = round(silhouette_score(Xt, y), 2).astype(np.float64)
+    config["initial_sil"] = round(silhouette_score(initial_Xt, y), 2).astype(np.float64)
+    config["final_sil"] = round(silhouette_score(final_Xt, y), 2).astype(np.float64)
 
-    if config["sil"] > 0.01 and config["sil"] < 0.99:
+    is_valid = (config["initial_sil"] > 0.4 and
+        config["final_sil"] > 0.1 and
+        config["initial_sil"] - config["final_sil"] > 0.1 and
+        config["initial_sil"] - config["final_sil"] < 0.7)
+    print(f"""valid: {is_valid}\tinitial sil: {round(config["initial_sil"], 2)},\tfinal sil: {round(config["final_sil"], 2)}""")
+    if is_valid:
         return dict_to_return
     else:
         raise Exception("Conf not valid")

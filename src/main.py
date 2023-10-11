@@ -79,7 +79,22 @@ if __name__ == "__main__":
         with open(os.path.join(output_path, "configs.json"), "w") as file:
             json.dump({idx: config for idx, config in enumerate(final_configs)}, file)
 
-        to_export = ["n_instances","n_clusters","n_clusters_ratio","cluster_std","support_total_features","n_features","support_noisy_features","support_correlated_features","support_distorted_features","noisy_features","correlated_features","distorted_features", "round"]
+        to_export = [
+            "n_instances",
+            "n_clusters",
+            "n_clusters_ratio",
+            "cluster_std",
+            "initial_sil",
+            "final_sil",
+            "support_total_features",
+            "n_features",
+            "support_noisy_features",
+            "support_correlated_features",
+            "support_distorted_features",
+            "noisy_features",
+            "correlated_features",
+            "distorted_features",
+            "round"]
         pd.read_json(os.path.join(output_path, "configs.json")).transpose()[to_export].to_csv(
             os.path.join(output_path, "configs.csv")
         )
