@@ -17,47 +17,49 @@ def create_configs(cs, n_configs):
     configs = [
         config.get_dictionary()
         for config in BlackBoxFacade.get_initial_design(
-            Scenario(cs),
-            n_configs=n_configs).select_configurations()
+            Scenario(cs), n_configs=n_configs
+        ).select_configurations()
     ]
 
     for config in configs:
-
         config["cluster_std"] = round(config["cluster_std"], 2)
         try:
             config["noisy_features"] = round(config["noisy_features"], 2)
             config["support_noisy_features"] = max(
-                1,
-                int(config["noisy_features"] * config["n_features"])
+                1, int(config["noisy_features"] * config["n_features"])
             )
         except:
-            config["noisy_features"] = 0.
+            config["noisy_features"] = 0.0
             config["support_noisy_features"] = 0
 
         try:
             config["correlated_features"] = round(config["correlated_features"], 2)
             config["support_correlated_features"] = max(
-                1,
-                int(config["correlated_features"] * config["n_features"])
+                1, int(config["correlated_features"] * config["n_features"])
             )
         except:
-            config["correlated_features"] = 0.
+            config["correlated_features"] = 0.0
             config["support_correlated_features"] = 0
 
-        config["support_total_features"] = config["n_features"] + config["support_noisy_features"] + config["support_correlated_features"]
+        config["support_total_features"] = (
+            config["n_features"]
+            + config["support_noisy_features"]
+            + config["support_correlated_features"]
+        )
 
         try:
             config["distorted_features"] = round(config["distorted_features"], 2)
             config["support_distorted_features"] = max(
-                1,
-                int(config["distorted_features"] * config["support_total_features"])
+                1, int(config["distorted_features"] * config["support_total_features"])
             )
         except:
-            config["distorted_features"] = 0.
+            config["distorted_features"] = 0.0
             config["support_distorted_features"] = 0
 
         config["n_clusters_ratio"] = round(config["n_clusters_ratio"], 2)
-        config["n_clusters"] = max(2, int(config["n_clusters_ratio"] * math.sqrt(config["n_instances"])))
+        config["n_clusters"] = max(
+            2, int(config["n_clusters_ratio"] * math.sqrt(config["n_instances"]))
+        )
 
         centroids = get_cluster_centroids(config)
 
@@ -68,7 +70,6 @@ def create_configs(cs, n_configs):
         config["support_cluster_std"] = [config["cluster_std"]] * config["n_clusters"]
 
         config["support_total_features"] += config["support_distorted_features"]
-
 
     return configs
 
@@ -165,30 +166,41 @@ def generate_clusters(config):
 
     if config["support_distorted_features"] > 0:
         dict_X["distorted"] = dict_X["final"]
-        for feature in random.sample(range(0, dict_X["final"].shape[1] - 1), config["support_distorted_features"]):
+        for feature in random.sample(
+            range(0, dict_X["final"].shape[1] - 1), config["support_distorted_features"]
+        ):
             dict_X["distorted"][:, feature] *= random.randint(2, 10)
 
         dict_X["final"] = dict_X["distorted"]
         step += 1
         dict_to_return[f"{step}distorted"] = to_df(dict_X["final"], y)
 
-
     step += 1
     dict_to_return[f"{step}final"] = to_df(dict_X["final"], y)
 
     initial_X = dict_to_return["0original"].copy().iloc[:, :-1].to_numpy()
     final_X = dict_to_return[f"{step}final"].copy().iloc[:, :-1].to_numpy()
-    initial_Xt = TSNE(n_components=2, random_state=42).fit_transform(initial_X) if initial_X.shape[1] > 2 else initial_X
-    final_Xt = TSNE(n_components=2, random_state=42).fit_transform(final_X) if final_X.shape[1] > 2 else final_X
+    initial_Xt = (
+        TSNE(n_components=2, random_state=42).fit_transform(initial_X)
+        if initial_X.shape[1] > 2
+        else initial_X
+    )
+    final_Xt = (
+        TSNE(n_components=2, random_state=42).fit_transform(final_X)
+        if final_X.shape[1] > 2
+        else final_X
+    )
 
     config["initial_sil"] = round(silhouette_score(initial_Xt, y), 2).astype(np.float64)
     config["final_sil"] = round(silhouette_score(final_Xt, y), 2).astype(np.float64)
 
-    is_valid = (config["initial_sil"] > 0.4 and
-        config["final_sil"] > 0.1 and
-        config["initial_sil"] - config["final_sil"] > 0.1 and
-        config["initial_sil"] - config["final_sil"] < 0.7)
-    print(f"""valid: {is_valid}\tinitial sil: {round(config["initial_sil"], 2)},\tfinal sil: {round(config["final_sil"], 2)}""")
+    is_valid = (
+        config["initial_sil"] > 0.4
+        and config["final_sil"] > 0.1
+        and config["initial_sil"] - config["final_sil"] > 0.1
+        and config["initial_sil"] - config["final_sil"] < 0.7
+    )
+    # print(f"""valid: {is_valid}\tinitial sil: {round(config["initial_sil"], 2)},\tfinal sil: {round(config["final_sil"], 2)}""")
     if is_valid:
         return dict_to_return
     else:

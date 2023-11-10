@@ -11,7 +11,17 @@ from sklearn.datasets import make_blobs
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 
-from ConfigSpace import Configuration, ConfigurationSpace, Float, Integer, EqualsCondition, InCondition
+from ConfigSpace import (
+    Categorical,
+    Configuration,
+    ConfigurationSpace,
+    Float,
+    Integer,
+    EqualsCondition,
+    InCondition,
+)
+from ConfigSpace.read_and_write import json as cs_json
+
 
 from tqdm import tqdm
 
@@ -26,31 +36,27 @@ if __name__ == "__main__":
     random.seed(seed)
     np.random.seed(seed)
 
-    cs = ConfigurationSpace(
-        {
-            "n_features": Integer("n_features", (2, 10), log=True),
-            # "n_instances": [100, 200, 500, 1000, 2000, 5000],
-            "n_instances": Integer("n_instances", (100, 5000), log=True),
-            # "n_clusters": (2, 6),
-            "n_clusters_ratio": Float("n_clusters_ratio", (0.05, 1.0), log=True),
-            # "cluster_std": (1.0, 1.5),
-            "cluster_std": (0.1, 0.3),
+    with open(os.path.join("resources", "configspace.json"), "r") as f:
+        json_string = f.read()
+        cs = cs_json.read(json_string)
 
-            "noisy_features": Float("noisy_features", (0.2, 0.5), log=False),
-
-            "correlated_features": Float("correlated_features", (0.2, 0.5), log=False),
-
-            "distorted_features": Float("distorted_features", (0.2, 0.5), log=False),
-
-            "kind": ["100", "010", "001", "110", "101", "011", "111"],
-        },
-        seed=seed,
+    cs.add_hyperparameter(
+        Categorical("kind", ["100", "010", "001", "110", "101", "011", "111"])
     )
 
-    cs.add_condition(InCondition(cs['noisy_features'], cs['kind'], ["100", "110", "101", "111"]))
-    cs.add_condition(InCondition(cs['correlated_features'], cs['kind'], ["010", "110", "011", "111"]))
-    cs.add_condition(InCondition(cs['distorted_features'], cs['kind'], ["001", "101", "011", "111"]))
+    cs.add_condition(
+        InCondition(cs["noisy_features"], cs["kind"], ["100", "110", "101", "111"])
+    )
+    cs.add_condition(
+        InCondition(cs["correlated_features"], cs["kind"], ["010", "110", "011", "111"])
+    )
+    cs.add_condition(
+        InCondition(cs["distorted_features"], cs["kind"], ["001", "101", "011", "111"])
+    )
 
+    # cs_string = cs_json.write(cs)
+    # with open(os.path.join("resources", "configspace.json"), "w") as f:
+    #     f.write(cs_string)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
@@ -63,8 +69,9 @@ if __name__ == "__main__":
         print("--- GENERATE CONFIGURATIONS ---")
         with tqdm(total=tot_configs) as pbar:
             while len(final_configs) < tot_configs:
-
-                current_configs = create_configs(cs=cs, n_configs=tot_configs-len(final_configs))
+                current_configs = create_configs(
+                    cs=cs, n_configs=tot_configs - len(final_configs)
+                )
 
                 current_round += 1
                 for config in current_configs:
@@ -94,16 +101,16 @@ if __name__ == "__main__":
             "noisy_features",
             "correlated_features",
             "distorted_features",
-            "round"]
-        pd.read_json(os.path.join(output_path, "configs.json")).transpose()[to_export].to_csv(
-            os.path.join(output_path, "configs.csv")
-        )
+            "round",
+        ]
+        pd.read_json(os.path.join(output_path, "configs.json")).transpose()[
+            to_export
+        ].to_csv(os.path.join(output_path, "configs.csv"))
 
         print("--- GENERATE CLUSTERINGS ---")
         with tqdm(total=tot_configs) as pbar:
             for id_clustering, clustering_dict in enumerate(final_clusterings):
                 for label, clustering in clustering_dict.items():
-
                     clustering_name = f"syn{id_clustering}_{label}"
                     fig = plot_cluster_data(clustering, "target")
                     fig.savefig(

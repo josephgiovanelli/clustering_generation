@@ -1,0 +1,69 @@
+{
+  "hyperparameters": [
+    {
+      "name": "cluster_std",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.1,
+      "upper": 0.3,
+      "default": 0.2,
+      "q": null
+    },
+    {
+      "name": "n_clusters_ratio",
+      "type": "uniform_float",
+      "log": true,
+      "lower": 0.05,
+      "upper": 1.0,
+      "default": 0.2236067977,
+      "q": null
+    },
+    {
+      "name": "n_features",
+      "type": "uniform_int",
+      "log": true,
+      "lower": 2,
+      "upper": 10,
+      "default": 4,
+      "q": null
+    },
+    {
+      "name": "n_instances",
+      "type": "uniform_int",
+      "log": true,
+      "lower": 100,
+      "upper": 5000,
+      "default": 707,
+      "q": null
+    },
+    {
+      "name": "correlated_features",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.2,
+      "upper": 0.5,
+      "default": 0.35,
+      "q": null
+    },
+    {
+      "name": "distorted_features",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.2,
+      "upper": 0.5,
+      "default": 0.35,
+      "q": null
+    },
+    {
+      "name": "noisy_features",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.2,
+      "upper": 0.5,
+      "default": 0.35,
+      "q": null
+    }
+  ],
+  "conditions": [],
+  "forbiddens": []
+}
